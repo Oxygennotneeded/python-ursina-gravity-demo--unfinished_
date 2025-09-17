@@ -2,13 +2,13 @@ from ursina import *
 import planet
 
 #---USER SETTINGS-------
-hold_duration_threshold = 0.25
+hold_duration_threshold = 0.25 #How long the click has to be for it to be considered a hold or a click of the mouse
 
 #---global variables----
-global add_planet_menu_instance, planet_list
-properties_menu_instance = None
+properties_menu_instance = None #to prevent menus from piling ontop of eachother
 add_planet_menu_instance = None
-#--Ursina shit
+
+#--Ursina 
 app = Ursina()
 Sky(texture='textures\milky-way-stars-in-space-virtual-reality-360-degree-video-elements-of-this-image-furnished-by-nasa_StprBfkdx_thumbnail-108010-1961978930.png')
 EditorCamera() 
@@ -24,7 +24,7 @@ for i in range(num_planets):
 class ADD_PLANET_MENU(Entity):
 
     def __init__(self):
-        global add_planet_menu
+        global add_planet_menu_instance
         super().__init__(
             parent = camera.ui,
             position = Vec2(0, 0),
@@ -44,10 +44,11 @@ class ADD_PLANET_MENU(Entity):
             scale=(0.15, 0.1),
             x=-0.4, 
             y=0.4 - 0.05,
-            z = -2                   
+            z = -2,
+            on_click = lambda: self.add_planet()                  
         )
 
-        self.add_planet_button.on_click = self.add_planet
+        #self.add_planet_button.on_click = self.add_planet
 
         self.exit_button = Button(
             parent=self,
@@ -59,24 +60,25 @@ class ADD_PLANET_MENU(Entity):
             y = 0.5,
             z = -2
         )
-        self.exit_button.on_click = self.destroy_menu
+        self.exit_button.on_click = lambda: self.destroy_menu()
 
     def add_planet(self):
-        global planet_list, add_planet_menu_instance
+        global add_planet_menu_instance
 
         created_planet = planet.PLANET(position = (1, 0 ,0), mouse_position = True)
         planet_list.append(created_planet)
         add_planet_menu_instance = None
-        destroy(self)
+        destroy(self, add_planet_menu_instance)
 
     def destroy_menu(self):
             global add_planet_menu_instance
+
             add_planet_menu_instance = None
             destroy(self)
     
 
 class PROPERTIES_MENU(Entity):
-    def __init__(self):
+    def __init__(self, menu_instance):
         super().__init__(
             parent=camera.ui,
             position=mouse.position + Vec2(0.1, 0),
@@ -86,7 +88,7 @@ class PROPERTIES_MENU(Entity):
             radius=0.2,
             z = -1
         )
-
+        
 
         self.title = Text(parent=self, text='Properties', color=color.white, y=0.4)
 
@@ -96,23 +98,26 @@ class PROPERTIES_MENU(Entity):
             color=color.blue,
             scale=(.8, .2),
             y=0.1,
-            z = -2
+            z = -2,
+            on_click = lambda: self.open_planet_menu()
         )
         
-        self.add_planet_button.on_click = self.open_planet_menu
+    
     
     def open_planet_menu(self):
         global add_planet_menu_instance
-        if add_planet_menu_instance != None:
-            destroy(add_planet_menu_instance)
-
-        else:
+        
+        if add_planet_menu_instance == None:
             add_planet_menu_instance = ADD_PLANET_MENU()
             destroy(self)
+            
+
+        else:
+            destroy(add_planet_menu_instance)
 
     
 def input(key):
-    global right_click_start_time, properties_menu_instance, add_planet_menu
+    global right_click_start_time, properties_menu_instance, add_planet_menu_instance
 
     if key == 'right mouse down':
         # Record the start time.
@@ -124,27 +129,24 @@ def input(key):
 
         #  Check if it was a tap.
         if duration < hold_duration_threshold:
-
             if properties_menu_instance:
                 destroy(properties_menu_instance)
 
             elif add_planet_menu_instance:
-                pass
+                return
 
-            else:
-                properties_menu_instance = PROPERTIES_MENU()
-
+            else:   
+                properties_menu_instance = PROPERTIES_MENU(properties_menu_instance) 
+            
     if key == 'left mouse up' and properties_menu_instance:
         destroy(properties_menu_instance)
 
 def update():
-
+    
     camera.x += held_keys['d'] * time.dt
     camera.x -= held_keys['a'] * time.dt
     camera.z += held_keys['w'] * time.dt
     camera.z -= held_keys['s'] * time.dt
-    
-    
     
     
 app.run()
