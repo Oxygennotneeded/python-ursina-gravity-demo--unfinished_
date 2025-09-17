@@ -1,12 +1,10 @@
 from ursina import *
 import planet
-
+from game_state import state
 #---USER SETTINGS-------
 hold_duration_threshold = 0.25 #How long the click has to be for it to be considered a hold or a click of the mouse
 
-#---global variables----
-properties_menu_instance = None #to prevent menus from piling ontop of eachother
-add_planet_menu_instance = None
+
 
 #--Ursina 
 app = Ursina()
@@ -24,7 +22,6 @@ for i in range(num_planets):
 class ADD_PLANET_MENU(Entity):
 
     def __init__(self):
-        global add_planet_menu_instance
         super().__init__(
             parent = camera.ui,
             position = Vec2(0, 0),
@@ -63,22 +60,22 @@ class ADD_PLANET_MENU(Entity):
         self.exit_button.on_click = lambda: self.destroy_menu()
 
     def add_planet(self):
-        global add_planet_menu_instance
+        
 
         created_planet = planet.PLANET(position = (1, 0 ,0), mouse_position = True)
         planet_list.append(created_planet)
-        add_planet_menu_instance = None
-        destroy(self, add_planet_menu_instance)
+        state.add_planet_menu_instance = None
+        destroy(self, state.add_planet_menu_instance)
 
     def destroy_menu(self):
-            global add_planet_menu_instance
+            
 
-            add_planet_menu_instance = None
+            state.add_planet_menu_instance = None
             destroy(self)
     
 
 class PROPERTIES_MENU(Entity):
-    def __init__(self, menu_instance):
+    def __init__(self):
         super().__init__(
             parent=camera.ui,
             position=mouse.position + Vec2(0.1, 0),
@@ -105,19 +102,19 @@ class PROPERTIES_MENU(Entity):
     
     
     def open_planet_menu(self):
-        global add_planet_menu_instance
         
-        if add_planet_menu_instance == None:
-            add_planet_menu_instance = ADD_PLANET_MENU()
+        
+        if state.add_planet_menu_instance == None:
+            state.add_planet_menu_instance = ADD_PLANET_MENU()
             destroy(self)
             
 
         else:
-            destroy(add_planet_menu_instance)
+            destroy(state.add_planet_menu_instance)
 
     
 def input(key):
-    global right_click_start_time, properties_menu_instance, add_planet_menu_instance
+    global right_click_start_time
 
     if key == 'right mouse down':
         # Record the start time.
@@ -129,17 +126,21 @@ def input(key):
 
         #  Check if it was a tap.
         if duration < hold_duration_threshold:
-            if properties_menu_instance:
-                destroy(properties_menu_instance)
 
-            elif add_planet_menu_instance:
+            #If this menu already exists, remove existing menu
+            if state.properties_menu_instance: 
+                destroy(state.properties_menu_instance)
+
+            #Dont allow properties menu to exist when add planet menu exists
+            elif state.add_planet_menu_instance:
                 return
-
-            else:   
-                properties_menu_instance = PROPERTIES_MENU(properties_menu_instance) 
             
-    if key == 'left mouse up' and properties_menu_instance:
-        destroy(properties_menu_instance)
+            #Create the properties menu and log its existance in our game state
+            else:   
+                state.properties_menu_instance = PROPERTIES_MENU() 
+            
+    if key == 'left mouse up' and state.properties_menu_instance:
+        destroy(state.properties_menu_instance)
 
 def update():
     
