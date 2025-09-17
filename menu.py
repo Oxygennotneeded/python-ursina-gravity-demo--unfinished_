@@ -43,18 +43,22 @@ class ADD_PLANET_MENU(Entity):
         self.exit_button.on_click = lambda: self.destroy_menu()
 
     def add_planet(self):
+        #Our created planet asigned its own planet
         created_planet = planet.PLANET(position = (1, 0 ,0), mouse_position = True)
-        state.planet_list.append(created_planet)
+        #add the object to our dictionary of planets
+        state.planets[state.next_planet_id] = created_planet
+        #change the next planet id
+        state.next_planet_id += 1
+        # destroy our menu and return back to None
         state.add_planet_menu_instance = None
         destroy(self, state.add_planet_menu_instance)
 
     def destroy_menu(self):
-            
-
+            #destroy menu and return state back to None
             state.add_planet_menu_instance = None
             destroy(self)
     
-    
+
 class PROPERTIES_MENU(Entity):
     def __init__(self):
         super().__init__(
@@ -83,12 +87,12 @@ class PROPERTIES_MENU(Entity):
     
     
     def open_planet_menu(self):
-        
-        
+        #if this menu hasnt been open yet
         if state.add_planet_menu_instance == None:
+            #open the add planet menu and destroy this Menu
             state.add_planet_menu_instance = ADD_PLANET_MENU()
             destroy(self)
-            
-
+        
+        #else destroy it // should never happen though but just in case
         else:
             destroy(state.add_planet_menu_instance)
